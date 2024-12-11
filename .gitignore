@@ -1,0 +1,6 @@
+# Python env
+venv/
+
+# Extra folders
+gen3_moves_files/
+move_names_files/
