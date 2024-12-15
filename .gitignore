@@ -1,5 +1,6 @@
 # Python env
 venv/
+**/__pycache__/
 
 # Extra folders
 gen3_moves_files/
