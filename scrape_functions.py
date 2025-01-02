@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.options import Options
+import pandas as pd
 import json
 import time
 
@@ -23,7 +24,7 @@ def scrape_moves(url):
         time.sleep(5)
 
         moves = driver.find_elements(By.CLASS_NAME, "MoveRow")
-        
+        move_list = []
         # Extract move data
         for move in moves:
             name = move.find_element(By.CSS_SELECTOR, "div.MoveRow-name").text
@@ -33,6 +34,20 @@ def scrape_moves(url):
             move_accuracy = move.find_element(By.CSS_SELECTOR, "div.MoveRow-accuracy > span").text
             move_pp = move.find_element(By.CSS_SELECTOR, "div.MoveRow-pp > span").text
             move_desc = move.find_element(By.CSS_SELECTOR, "div.MoveRow-description").text
-            print(name, move_type, damage_type, move_power, move_accuracy, move_pp, move_desc)
+ 
+            # Create move dataframe
+            move = {
+                'name': name,
+                'type': move_type,
+                'damage_type': damage_type,
+                'power': move_power,
+                'accuracy': move_accuracy,
+                'pp': move_pp,
+                'description': move_desc 
+            }
+
+            # Add move to list
+            move_list.append(move)
     finally:
         driver.quit()
+        return move_list # Return list of moves
