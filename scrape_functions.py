@@ -25,6 +25,7 @@ def scrape_moves(url):
 
         moves = driver.find_elements(By.CLASS_NAME, "MoveRow")
         move_list = []
+
         # Extract move data
         for move in moves:
             name = move.find_element(By.CSS_SELECTOR, "div.MoveRow-name").text
@@ -51,3 +52,63 @@ def scrape_moves(url):
     finally:
         driver.quit()
         return move_list # Return list of moves
+
+# Scrape smogon url for pokemon data
+def scrape_pokemon(url):
+    # Set options for Firefox to run in background
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+
+    driver = webdriver.Firefox(options=options)
+    try:
+        # Go to url
+        driver.get(url)
+
+        # Expand window size to capture all dynamically generated elements
+        driver.set_window_size(1920, 14800)
+        time.sleep(5)
+
+        pokemons = driver.find_elements(By.CLASS_NAME, "PokemonAltRow")
+        pokemon_list = []
+
+        # Extract pokemon data
+        for mon in pokemons:
+            name = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-name").text
+            type_list = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-types").text.splitlines()
+            ability_list = mon.find_elements(By.CLASS_NAME, "AbilityList")
+            base_hp = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-hp").text.split("\n")[1]
+            base_atk = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-atk").text.split("\n")[1]
+            base_def = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-def").text.split("\n")[1]
+            base_spa = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-spa").text.split("\n")[1]
+            base_spd = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-spd").text.split("\n")[1]
+            base_spe = mon.find_element(By.CSS_SELECTOR, "div.PokemonAltRow-spe").text.split("\n")[1]
+            
+            # Check for multiple typings
+            if len(type_list) == 1:
+                type_list = type_list[0]
+
+            # Check for multiple abilities
+            if len(ability_list) > 1 and ability_list[1].text != "":
+                ability_list = [ability_list[0].text, ability_list[1].text]
+            else:
+                ability_list = ability_list[0].text
+
+            # Create pokemon dataframe
+            pokemon = {
+                'name': name,
+                'type': type_list,
+                'ability': ability_list,
+                'hp': base_hp,
+                'attack': base_atk,
+                'defense': base_def,
+                'special_attack': base_spa,
+                'special_defense': base_spd,
+                'speed': base_spe
+            }
+
+            # Add pokemon to list
+            pokemon_list.append(pokemon)
+    finally:
+        driver.quit()
+        return pokemon_list # Return list of pokemon 
