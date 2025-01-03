@@ -113,6 +113,44 @@ def scrape_pokemon(url):
             pokemon_list.append(pokemon)
     finally:
         driver.quit()
-        
+
         df = pd.DataFrame(pokemon_list)
         return df # Return pandas dataframe
+
+# Scrape smogon url for abilities list
+def scrape_abilities(url):
+    # Set options for Firefox to run in background
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+
+    driver = webdriver.Firefox(options=options)
+    try:
+        # Go to url
+        driver.get(url)
+
+        # Expand window size to capture all dynamically generated elements
+        driver.set_window_size(1920, 3150)
+        time.sleep(5)
+
+        abilities = driver.find_elements(By.CLASS_NAME, "AbilityRow")
+        ability_list = []
+
+        # Extract ability data
+        for ab in abilities:
+            name = ab.find_element(By.CSS_SELECTOR, "div.AbilityRow-name").text
+            ability_desc = ab.find_element(By.CSS_SELECTOR, "div.AbilityRow-description").text
+ 
+            # Create ability dictionary
+            ability = {
+                'name': name,
+                'description': ability_desc
+            }
+
+            # Add ability to list
+            ability_list.append(ability)
+    finally:
+        driver.quit()
+
+        df = pd.DataFrame(ability_list)
+        return df # Return dataframe
