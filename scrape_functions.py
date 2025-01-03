@@ -192,3 +192,62 @@ def scrape_items(url):
 
         df = pd.DataFrame(item_list)
         return df # Return dataframe
+
+# Scrape dex number, kanji and hepburn for pokemon
+def scrape_pokemon_jp(url):
+# Set options for Firefox to run in background
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+
+    driver = webdriver.Firefox(options=options)
+    try:
+        # Go to url
+        driver.get(url)
+
+        # Expand window size to capture all dynamically generated elements
+        driver.set_window_size(1920, 13000)
+        time.sleep(5)
+
+        # Find tables for gen 1 - 3
+        tables = driver.find_elements(By.XPATH, "/html/body/div[1]/div[2]/div[1]/div[3]/div[4]/div[1]/table")
+
+        pokemons = []
+        pokemon_list = []    
+
+        # Extract rows from tables and combine into one list
+        for i, table in enumerate(tables[:3], start=1):
+            curr_gen = table.find_elements(By.TAG_NAME, "tr")
+            pokemons = pokemons + curr_gen[2:]
+            time.sleep(5)
+
+        # Extract pokemon name data
+        for mon in pokemons:
+            name_str = mon.text
+
+            # Check if "Mr. Mime" is in the string
+            if "Mr. Mime" in name_str:
+                # Replace "Mr. Mime" with a placeholder
+                name_str = name_str.replace("Mr. Mime", "Mr_Mime")
+
+            # Split string
+            names = name_str.split(" ")
+
+            # Restore "Mr. Mime" for eng name
+            names = [name.replace("Mr_Mime", "Mr. Mime") for name in names]
+            
+            # Create pokemon names dictionary
+            pokemon = {
+                'dex_entry': names[0],
+                'eng_name': names[1],
+                'kanji': names[2],
+                'hepburn': names[3]
+            }
+
+            # Add pokemon to list
+            pokemon_list.append(pokemon)
+    finally:
+        driver.quit()
+
+        df = pd.DataFrame(pokemon_list)
+        return df # Return dataframe
