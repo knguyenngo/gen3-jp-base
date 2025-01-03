@@ -36,7 +36,7 @@ def scrape_moves(url):
             move_pp = move.find_element(By.CSS_SELECTOR, "div.MoveRow-pp > span").text
             move_desc = move.find_element(By.CSS_SELECTOR, "div.MoveRow-description").text
  
-            # Create move dataframe
+            # Create move dictionary
             move = {
                 'name': name,
                 'type': move_type,
@@ -51,7 +51,9 @@ def scrape_moves(url):
             move_list.append(move)
     finally:
         driver.quit()
-        return move_list # Return list of moves
+
+        df = pd.DataFrame(move_list)
+        return df # Return dataframe
 
 # Scrape smogon url for pokemon data
 def scrape_pokemon(url):
@@ -94,7 +96,7 @@ def scrape_pokemon(url):
             else:
                 ability_list = ability_list[0].text
 
-            # Create pokemon dataframe
+            # Create pokemon dictionary
             pokemon = {
                 'name': name,
                 'type': type_list,
@@ -111,4 +113,6 @@ def scrape_pokemon(url):
             pokemon_list.append(pokemon)
     finally:
         driver.quit()
-        return pokemon_list # Return list of pokemon 
+        
+        df = pd.DataFrame(pokemon_list)
+        return df # Return pandas dataframe
