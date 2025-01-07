@@ -4,7 +4,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.options import Options
 import pandas as pd
-import json
 import time
 
 # Scrape smogon url for move list
@@ -27,14 +26,14 @@ def scrape_moves(url):
         move_list = []
 
         # Extract move data
-        for move in moves:
-            name = move.find_element(By.CSS_SELECTOR, "div.MoveRow-name").text
-            move_type = move.find_element(By.CSS_SELECTOR, "div.MoveRow-type").text
-            damage_type = move.find_element(By.CSS_SELECTOR, "div.damage-category-block").get_attribute("class").split()[-1]
-            move_power = move.find_element(By.CSS_SELECTOR, "div.MoveRow-power > span").text
-            move_accuracy = move.find_element(By.CSS_SELECTOR, "div.MoveRow-accuracy > span").text
-            move_pp = move.find_element(By.CSS_SELECTOR, "div.MoveRow-pp > span").text
-            move_desc = move.find_element(By.CSS_SELECTOR, "div.MoveRow-description").text
+        for m in moves:
+            name = m.find_element(By.CSS_SELECTOR, "div.MoveRow-name").text
+            move_type = m.find_element(By.CSS_SELECTOR, "div.MoveRow-type").text
+            damage_type = m.find_element(By.CSS_SELECTOR, "div.damage-category-block").get_attribute("class").split()[-1]
+            move_power = m.find_element(By.CSS_SELECTOR, "div.MoveRow-power > span").text
+            move_accuracy = m.find_element(By.CSS_SELECTOR, "div.MoveRow-accuracy > span").text
+            move_pp = m.find_element(By.CSS_SELECTOR, "div.MoveRow-pp > span").text
+            move_desc = m.find_element(By.CSS_SELECTOR, "div.MoveRow-description").text
  
             # Create move dictionary
             move = {
@@ -49,11 +48,17 @@ def scrape_moves(url):
 
             # Add move to list
             move_list.append(move)
+
+    # Print errors if any
+    except Exception as e: print(e)
+
+    # Succesful scrape return dataframe
     finally:
         driver.quit()
 
         df = pd.DataFrame(move_list)
         return df # Return dataframe
+
 
 # Scrape smogon url for pokemon data
 def scrape_pokemon(url):
@@ -111,11 +116,17 @@ def scrape_pokemon(url):
 
             # Add pokemon to list
             pokemon_list.append(pokemon)
+
+    # Print errors if any
+    except Exception as e: print(e)
+
+    # Succesful scrape return dataframe
     finally:
         driver.quit()
 
         df = pd.DataFrame(pokemon_list)
         return df # Return dataframe
+
 
 # Scrape smogon url for abilities list
 def scrape_abilities(url):
@@ -149,11 +160,17 @@ def scrape_abilities(url):
 
             # Add ability to list
             ability_list.append(ability)
+
+    # Print errors if any
+    except Exception as e: print(e)
+
+    # Succesful scrape return dataframe
     finally:
         driver.quit()
 
         df = pd.DataFrame(ability_list)
         return df # Return dataframe
+
 
 # Scrape smogon url for items list
 def scrape_items(url):
@@ -187,11 +204,17 @@ def scrape_items(url):
 
             # Add item to list
             item_list.append(item)
+
+    # Print errors if any
+    except Exception as e: print(e)
+
+    # Succesful scrape return dataframe
     finally:
         driver.quit()
 
         df = pd.DataFrame(item_list)
         return df # Return dataframe
+
 
 # Scrape dex number, kanji and hepburn for pokemon
 def scrape_pokemon_jp(url):
@@ -223,31 +246,92 @@ def scrape_pokemon_jp(url):
 
         # Extract pokemon name data
         for mon in pokemons:
-            name_str = mon.text
+            # Extract cells from row
+            cells = mon.find_elements(By.TAG_NAME, "td")
 
-            # Check if "Mr. Mime" is in the string
-            if "Mr. Mime" in name_str:
-                # Replace "Mr. Mime" with a placeholder
-                name_str = name_str.replace("Mr. Mime", "Mr_Mime")
+            # Extract english name
+            eng_name = cells[2].text.strip()
 
-            # Split string
-            names = name_str.split(" ")
-
-            # Restore "Mr. Mime" for eng name
-            names = [name.replace("Mr_Mime", "Mr. Mime") for name in names]
+            # Check for Nidoran special characters and replace to match Smogon data
+            if eng_name == 'Nidoran♂':
+                eng_name = 'Nidoran-M'
+            if eng_name == 'Nidoran♀':
+                eng_name = 'Nidoran-F'
             
             # Create pokemon names dictionary
             pokemon = {
-                'dex_entry': names[0],
-                'eng_name': names[1],
-                'kanji': names[2],
-                'hepburn': names[3]
+                'dex_entry': cells[0].text.strip(),
+                'eng_name': eng_name,
+                'kanji': cells[3].text.strip(),
+                'hepburn': cells[4].text.strip()
             }
 
             # Add pokemon to list
             pokemon_list.append(pokemon)
+
+    # Print errors if any
+    except Exception as e: print(e)
+
+    # Succesful scrape return dataframe
     finally:
         driver.quit()
 
         df = pd.DataFrame(pokemon_list)
+        return df # Return dataframe
+
+
+def scrape_moves_jp(url, move_df):
+# Set options for Firefox to run in background
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+
+    driver = webdriver.Firefox(options=options)
+    try:
+        # Go to url
+        driver.get(url)
+
+        # Expand window size to capture all dynamically generated elements
+        driver.set_window_size(1920, 13000)
+        time.sleep(5)
+
+        # Find table for moves
+        table = driver.find_element(By.XPATH, "/html/body/div[1]/div[2]/div[1]/div[3]/div[4]/div[1]/table[2]")
+        moves = driver.find_elements(By.TAG_NAME, "tr")
+
+        move_list = []
+
+        # Extract move name data
+        for m in moves:
+            # Extract cells from row
+            cells = m.find_elements(By.TAG_NAME, "td")
+
+            # Create move names dictionary
+            if len(cells) > 2:
+                eng_name = cells[1].text.strip()
+
+                # Vice Grip is listed as Vise Grip on Bulba -.-
+                if eng_name == 'Vise Grip':
+                    eng_name = 'Vice Grip'
+
+                # Only scrape for moves available in gen 3
+                if eng_name in move_df.name.values:
+                    move = {
+                        'eng_name': eng_name,
+                        'kanji': cells[2].text.strip(),
+                        'hepburn': cells[3].text.strip()
+                    }
+
+                    # Add move to list
+                    move_list.append(move)
+
+    # Print errors if any
+    except Exception as e: print(e)
+
+    # Succesful scrape return dataframe
+    finally:
+        driver.quit()
+
+        df = pd.DataFrame(move_list)
+        df = df.sort_values('eng_name')
         return df # Return dataframe
